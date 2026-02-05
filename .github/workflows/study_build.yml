@@ -1,0 +1,39 @@
+name: Study Build Fixed
+on: workflow_dispatch
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write  # Crucial for creating the release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive # Ensures all project parts are downloaded
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20 # Uses a more stable version for Tauri 2.0
+          cache: 'npm'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Install Frontend Dependencies
+        run: |
+          npm install -g @tauri-apps/cli
+          npm install
+
+      - name: Build Tauri App
+        run: npm run tauri build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact (Backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: CCVG-Installer
+          path: src-tauri/target/release/bundle/msi/*.msi # Saves the installer here if Release fails
